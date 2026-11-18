@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CV - Santos Rivera-Cardona</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <nav aria-label="Main">
+    <a class="site-title" href="index.html">Santos Rivera-Cardona</a>
+    <a href="cv.html" aria-current="page">CV</a>
+    <a href="research.html">Research</a>
+    <a href="teaching.html">Teaching</a>
+    <a href="flags.html">Flag Database</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>CV</h1>
+
+  <!-- Your CV lives at cv.pdf. To update it, replace that file and keep the same name. -->
+  <div class="cv-toolbar">
+    <a class="cv-download" href="cv.pdf" download>Download PDF</a>
+    <a href="cv.pdf" target="_blank" rel="noopener">Open in a new tab</a>
+  </div>
+
+  <div class="cv-viewer" id="cv-viewer" tabindex="0" role="region" aria-label="CV, scroll to read">
+    <p class="cv-status">Loading CV…</p>
+  </div>
+
+  <script type="module">
+    // Draws each page of cv.pdf inside the scrolling window.
+    // Uses PDF.js (in the js folder) so it looks the same on phones and computers.
+    const box = document.getElementById('cv-viewer');
+    const url = 'cv.pdf';
+
+    async function draw() {
+      const pdfjs = await import('./pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs';
+      const pdf = await pdfjs.getDocument({ url }).promise;
+      const available = box.clientWidth - 32;
+      const dpr = window.devicePixelRatio || 1;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const base = page.getViewport({ scale: 1 });
+        const scale = Math.min(available / base.width, 1.5);
+        const view = page.getViewport({ scale: scale * dpr });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'cv-page';
+        canvas.width = view.width;
+        canvas.height = view.height;
+        canvas.style.width = Math.floor(view.width / dpr) + 'px';
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', `CV page ${i} of ${pdf.numPages}`);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: view }).promise;
+        pages.push(canvas);
+      }
+      box.replaceChildren(...pages);
+    }
+
+    draw().catch(() => {
+      // If anything fails, fall back to the browser's own PDF viewer.
+      box.innerHTML = '<iframe class="cv-frame" src="cv.pdf" title="CV"></iframe>';
+    });
+  </script>
+
+</main>
+
+<footer>
+  © 2026 Santos Rivera-Cardona
+</footer>
+
+</body>
+</html>
